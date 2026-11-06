@@ -1,4 +1,5 @@
 __pycache__/
 .ipynb_checkpoints/
 .DS_Store
-data/
+data/raw/StarterNotebook.ipynb
+data/raw/manifest-*.json
