@@ -40,7 +40,7 @@ vs 20%/yr on-farm (Kenyan storage-loss surveys, range 10–36%).
   rise to June is ≈ 34%. The seasonal model beats a random walk at a 3-month horizon out of sample
   (absolute log error 15.1% vs 18.6%; bootstrap CI excludes zero).
 * **Value of storing (model):** ≈ **+27%** of the December price in a certified warehouse, ≈ +18%
-  on-farm at 20%/yr losses (+10% at 36%). The best time to sell is **June** (May at high losses).
+  on-farm at 20%/yr losses. The best time to sell is **June**.
   At 40 KSh/kg this is ≈ KSh 950 per 90-kg bag in a warehouse vs ≈ KSh 630 on-farm.
 * **The "option" is a calendar decision.** Because the payoff is the price and all costs are
   proportional to it, under GBM the tree value equals the best fixed sale month exactly — waiting
