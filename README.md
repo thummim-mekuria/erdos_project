@@ -2,6 +2,10 @@
 
 Course project for the Erdős Institute *Quantitative Methods in Finance* (Fall 2026).
 
+*Inspired by the Zindi [agriBORA Commodity Price Forecasting Challenge](https://zindi.africa/competitions/agribora-commodity-price-forecasting-challenge)
+(forecasting Kenyan maize prices). This project uses its data and setting but asks the
+decision question behind a forecast: is it worth storing grain to sell later, and when?*
+
 **Question.** A Uasin-Gishu (Eldoret) farmer holding maize after the October–December harvest can
 sell now or store the grain — in a certified warehouse such as agriBORA's agriGHALA, or on the
 farm — and sell later. Storing costs interest, fees and (on-farm) losses. What is the option to
