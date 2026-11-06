@@ -19,6 +19,8 @@ Outputs:
     data/nairobi_uasingishu/wfp.csv               WFP maize-grain rows, both counties
     data/processed/wfp_monthly_wholesale.csv      cleaned monthly series used for the
                                                   storage-option calibration
+                                                  (Nairobi 2006-01..2021-11,
+                                                  Uasin-Gishu 2006-01..2025-06)
 """
 
 from pathlib import Path
@@ -39,9 +41,11 @@ COUNTIES = ["Nairobi", "Uasin-Gishu"]
 #    below both the WFP white-dry bag series and KAMIS Eldoret Main from 2021,
 #    so it is used only to 2020-12 (gaps filled from the white 90 kg series,
 #    which agrees with it: median ratio 1.02 over 2006-2020), and the white-dry
-#    90 kg series is used for 2021.
+#    90 kg series is used from 2021. Its gaps are filled from KAMIS Eldoret
+#    Main Market (monthly median), which matches WFP Eldoret where both exist
+#    (median ratio 1.00, IQR 0.99-1.01, 36 months): WFP republishes KAMIS.
 NAIROBI_END = "2021-11"
-UG_PERKG_END, UG_END = "2020-12", "2021-12"
+UG_PERKG_END, UG_END = "2020-12", "2025-06"   # no WFP or KAMIS Eldoret data for 2025-07..12
 
 
 def agribora():
@@ -70,7 +74,7 @@ def wfp():
     return df[keep].sort_values(["admin2", "market", "commodity", "date"])
 
 
-def monthly_series(w):
+def monthly_series(w, k):
     w = w[w.pricetype == "Wholesale"].copy()
     w["month"] = pd.to_datetime(w.date).dt.to_period("M")
     w["kes_per_kg"] = np.where(w.unit == "90 KG", w.price / 90, w.price)
@@ -91,6 +95,10 @@ def monthly_series(w):
             rows.append(("Nairobi", m, np.nan, "missing"))
     # Uasin-Gishu (Eldoret town)
     mk = "Eldoret town (Uasin Gishu)"
+    kk = k.drop_duplicates()
+    kk = kk[(kk.Market == "Eldoret_Main_Market") & (kk.Commodity_Classification == "Dry_White_Maize")
+            & kk.Wholesale.between(5, 200)]
+    k_eld = kk.groupby(pd.to_datetime(kk.Date).dt.to_period("M")).Wholesale.median()
     perkg, white, dry = (series(mk, "Maize", "KG"), series(mk, "Maize (white)", "90 KG"),
                          series(mk, "Maize (white, dry)", "90 KG"))
     for m in pd.period_range("2006-01", UG_END, freq="M"):
@@ -101,9 +109,12 @@ def monthly_series(w):
                 rows.append(("Uasin-Gishu", m, white[m], "WFP Eldoret, Maize (white) per 90 kg / 90"))
             else:
                 rows.append(("Uasin-Gishu", m, np.nan, "missing"))
+        elif m in dry.index:
+            rows.append(("Uasin-Gishu", m, dry[m], "WFP Eldoret, Maize (white, dry) per 90 kg / 90"))
+        elif m in k_eld.index:
+            rows.append(("Uasin-Gishu", m, k_eld[m], "KAMIS Eldoret Main Market (Zindi), monthly median"))
         else:
-            rows.append(("Uasin-Gishu", m, dry.get(m, np.nan),
-                         "WFP Eldoret, Maize (white, dry) per 90 kg / 90" if m in dry.index else "missing"))
+            rows.append(("Uasin-Gishu", m, np.nan, "missing"))
     out = pd.DataFrame(rows, columns=["county", "month", "wholesale_kes_per_kg", "source"])
     out["wholesale_kes_per_kg"] = out.wholesale_kes_per_kg.round(4)
     return out
@@ -113,10 +124,11 @@ def main():
     OUT.mkdir(exist_ok=True)
     PROC.mkdir(exist_ok=True)
     agribora().to_csv(OUT / "agribora_weekly.csv", index=False)
-    kamis().to_csv(OUT / "kamis.csv", index=False)
+    k = kamis()
+    k.to_csv(OUT / "kamis.csv", index=False)
     w = wfp()
     w.to_csv(OUT / "wfp.csv", index=False)
-    m = monthly_series(w)
+    m = monthly_series(w, k)
     m.to_csv(PROC / "wfp_monthly_wholesale.csv", index=False)
     for c, g in m.groupby("county"):
         miss = g[g.wholesale_kes_per_kg.isna()].month.astype(str).tolist()

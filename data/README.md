@@ -9,7 +9,7 @@ per 90-kg bag are divided by 90).
 
 | File | Contents |
 |---|---|
-| `processed/wfp_monthly_wholesale.csv` | **Cleaned monthly series for calibration.** Nairobi 2006-01 → 2021-11 (188/191 months; missing 2020-05, 2020-06, 2020-12). Uasin-Gishu 2006-01 → 2021-12 (190/192; missing 2020-04, 2020-05). The `source` column says which WFP series each month came from. |
+| `processed/wfp_monthly_wholesale.csv` | **Cleaned monthly series for calibration.** Nairobi 2006-01 → 2021-11 (188/191 months; missing 2020-05, 2020-06, 2020-12). Uasin-Gishu 2006-01 → 2025-06 (225/234; missing 2020-04/05, 2023-12, 2024-01, 2024-10 → 2025-01, 2025-03). The `source` column says which WFP series each month came from. |
 | `nairobi_uasingishu/agribora_weekly.csv` | agriBORA weekly prices for both counties, 2023-10 → 2026-01, from all three challenge files (the `file` column; `final_weeks_heldout` = the challenge's held-out answers) |
 | `nairobi_uasingishu/kamis.csv` | KAMIS market-level rows (Zindi extract) for both counties, 2021-05 → 2025-07, unmodified (it still contains duplicates and outliers) |
 | `nairobi_uasingishu/wfp.csv` | WFP maize-grain rows (wholesale and retail) for both counties, 2006 → 2026-09, unmodified; Kitengela removed (it is in Kajiado county) |
@@ -29,12 +29,21 @@ download them to those folders from the sources below.
   2008-01..03 and 2009-10..11 filled from the per-90-kg "Maize (white)"
   series (median ratio 1.02 over 2006–2020). For 2021 the per-kg series runs
   ≈ 26% below both WFP's "Maize (white, dry)" bag series and KAMIS's Eldoret
-  Main Market, so **2021** uses the white-dry bag series. Assumption: the
+  Main Market, so **from 2021** the white-dry bag series is used, with gaps
+  filled from KAMIS Eldoret Main Market (monthly median), which matches WFP
+  Eldoret exactly where both exist (median ratio 1.00, IQR 0.99–1.01, 36
+  months: WFP republishes KAMIS). Ends 2025-06: neither source has Eldoret
+  prices for 2025-07..12. Assumption: the
   "white" (ends 2020-03) and "white, dry" (starts 2021-01) bag series are the
   same series, renamed; they do not overlap, so this cannot be checked.
 * Missing months are left as NaN; interpolating them is a modelling choice.
-* The window deliberately stops before the 2022 drought price spike
-  (Kangemi 58.5, Eldoret 66.5 KSh/kg by 2022-06).
+* Nairobi stops before the 2022–23 drought price spike; Uasin-Gishu includes
+  it (peaks 90.3 KSh/kg Jul 2022, 90.4 Jun 2023, both confirmed by KAMIS).
+
+## Figures
+
+`figures/make_figures.py` (price histories) and `figures/seasonality.py`
+(seasonal-cycle tests + figure) regenerate everything in `figures/`.
 
 ## Sources reviewed (full datasets, 2026-11-06)
 
