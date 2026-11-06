@@ -18,8 +18,9 @@ what is new code. It is not the notebook.
 | `data/nairobi_uasingishu/agribora_weekly.csv` | agriBORA's own Uasin-Gishu weekly prices, 2023-10 → 2026-01 |
 | `data/nairobi_uasingishu/kamis.csv` | KAMIS market-level rows (Eldoret Main etc.), 2021-05 → 2025-07 |
 | `data/make_data.py`, `data/README.md` | How the series was built; sources and licenses |
-| `figures/seasonality.py` | Seasonality tests + figure (Step 3, done) |
-| `figures/make_figures.py` | Price-history figures |
+| `figures/seasonality.py` | Seasonality tests + `seasonality_uasin_gishu.png` (Step 3, done) |
+| `figures/make_figures.py` | `uasin_gishu_price_2006_2025.png`: price history + seasonal pattern |
+| `maize_storage_option.ipynb` | **The project notebook** (Steps 1–4 done) |
 
 Put the notebook in the repo root so it can `import quantkit as qk`.
 
@@ -106,48 +107,53 @@ has to show whether this survives volatility and bad years.
 
 ## 4. Notebook sections
 
-### Step 1 — Load and inspect (Lecture 3a) — *mostly done*
+### Step 1 — Load and inspect (Lecture 3a) — *done (nominal prices)*
 * Load `wfp_monthly_wholesale.csv`, keep `Uasin-Gishu`, index by month.
 * Reproduce the price-history figure (`figures/make_figures.py`) and mark
   harvest (Oct–Dec) and lean (May–Aug) months.
 * Decide nominal vs real (CPI) and apply it here.
 
-### Step 2 — Returns and volatility (Lecture 3a)
-* `qk.log_returns`, `qk.annualized_vol(r, periods_per_year=12)` —
-  ≈ 43%/yr nominal over 2006–2025.
-* `qk.rolling_vol(r, window=12, periods_per_year=12)`. Is volatility higher
-  in the lean season or in crisis years? (Feeds Step 4's regime option.)
-
-### Step 3 — Test the GBM assumptions and the seasonal cycle (Lecture 8) — *seasonality done*
-* `qk.test_normality(r)`, `qk.ljung_box(r, lags=12)`,
-  `qk.ljung_box(abs(r), lags=12)`; report and say where GBM fails.
-* **Seasonality (done, `figures/seasonality.py`):** Kruskal–Wallis across
-  months p = 2e-5; annual sine cycle 6.7%/month, random-phase permutation
-  p = 0.0002; price higher in May–Jul than Dec–Jan in **15 of 17** seasons
-  (sign test p = 0.001); significant in both halves of the sample. Average
-  path: +33% by June, falling back by November. The two down years (2010
+### Step 2 — The seasonal cycle (Lecture 8) — *done*
+* Plot each season (Dec → Nov) relative to its Dec–Jan harvest level, coloured
+  by year, with the average and a 95% band.
+* Tests (`figures/seasonality.py`): Kruskal–Wallis across months p = 2e-5;
+  annual sine cycle 6.7%/month, random-phase permutation p = 0.0002; price
+  higher in May–Jul than Dec–Jan in **15 of 17** seasons (sign test p =
+  0.001); significant in both halves of the sample. The two down years (2010
   −30%, 2018 −15%) are the risk the option must price.
+* Average log return by calendar month ± 2 SE (`qk.mc_estimate`).
 
-### Step 4 — Price model (Lectures 4, 11b; F26 L12 calibration)
-* **Seasonal drift:** expected log return for each calendar month. Smooth it
-  by fitting `a + Σ_k [b_k sin(2πkm/12) + c_k cos(2πkm/12)]` (k = 1, 2) with
-  `scipy.optimize.least_squares` — the same tool L12 uses to calibrate Heston.
-  Annualize: `drift_month × 12`.
-* **Two calibrations:** (A) 2006–2021, (B) 2006–2025 incl. the 2022–23 spike.
-  Carry both through Steps 6–8; the gap between them is a result.
-* **Volatility:** constant σ from Step 2 to start.
-* **Model check by simulation:** `qk.gbm_paths(S0, sigma, t, r, n_steps,
-  n_sims, mu=drift_path - r, rng=rng)` (`gbm_paths` adds `r` to `mu`).
-  Are historical 3- and 6-month changes inside the simulated 5–95% band
-  about 90% of the time?
-* *Optional, two regimes (L11b):* calm vs crisis volatility with
-  `qk.markov_vol_states`, durations from Step 2's rolling vol.
+### Step 3 — Seasonal drift (Lecture 4; F26 L12 calibration) — *done*
+* Smooth the monthly means with `a + Σ_k [b_k sin(2πkm/12) + c_k cos(2πkm/12)]`
+  fitted by `scipy.optimize.least_squares` — the same tool L12 uses to
+  calibrate Heston. K chosen by leave-one-year-out cross-validation (K = 1).
+  Expected path: ≈ +34% from December to June.
+* **One calibration: the full series, 2006-01 → 2025-06** (incl. the 2022–23 spike).
+  Excluding 2022–23 changed σ by only 0.01 and the June peak by ≈ 3 points, so a
+  second calibration is not carried; the Step 8 backtest (re-estimated each season,
+  results per season) shows how much of storage's value comes from 2022–23.
+
+### Step 4 — Volatility and the GBM assumptions (Lectures 3a, 8, 11b) — *done*
+* Raw returns: `qk.annualized_vol(r, 12)` ≈ 0.43; `qk.test_normality`,
+  `qk.ljung_box(r, 12)`, `qk.ljung_box(abs(r), 12)`.
+* De-seasonalized returns ε = r − g(m): σ ≈ 0.40 (the model's σ); fat tails,
+  lag-12 autocorrelation ≈ −0.2 (year-to-year mean reversion), volatility
+  clustering.
+* Volatility over the past 12 calendar months (≥ 9 returns; windows with gaps
+  marked), raw vs de-seasonalized; largest in the lean season.
+* Drift for the tree: μ(m) = 12 g(m) + σ²/2 (Itô term).
+* **Model check by simulation:** `qk.gbm_paths(..., mu=drift_path - r)`
+  (`gbm_paths` adds `r` to `mu`): historical 3- and 6-month changes fall inside
+  the simulated 5–95% band ≈ 89–90% of the time.
+* *Optional, two regimes (L11b):* calm vs crisis σ from the de-seasonalized
+  past-year volatility, for `qk.markov_vol_states`.
 * *Optional, stochastic volatility (F26 L12):* `qk.heston_paths` gives
   mean-reverting random variance. It takes a constant drift, so add the
   seasonal part by multiplying each path by
   `exp(cumulative seasonal drift − constant drift)`. Fit κ, θ, ξ by matching
   the level, persistence and spread of rolling variance — there are no
   options to calibrate to, which is worth saying.
+* Parameters saved to `data/processed/model_params.json`.
 
 ### Step 5 — Out-of-sample forecast check (validation)
 * Rolling origin, monthly: at each month use only earlier data to estimate
@@ -172,8 +178,8 @@ value, sell_prices = qk.binomial_optimal_stopping(
 )
 option_value = value - price_in_december
 ```
-* Run for **warehouse** (loss 0%) and **on-farm** (loss 20%), calibrations A
-  and B. Report option value in KSh/kg and KSh per 90-kg bag.
+* Run for **warehouse** (loss 0%) and **on-farm** (loss 20%). Report option
+  value in KSh/kg and KSh per 90-kg bag.
 * **Sell rule:** `min(sell_prices[i])` against month = the boundary "sell once
   the price is at least this". Plot it over the average seasonal path.
 * Before changing the payoff, show the tree reproduces `qk.american_put`
@@ -228,10 +234,10 @@ option_value = value - price_in_december
 
 | Step | Lecture | `quantkit` | New code |
 |---|---|---|---|
-| 1 Data | 3a | — | CPI choice, plots |
-| 2 Returns/vol | 3a | `log_returns`, `annualized_vol`, `rolling_vol` | — |
-| 3 Tests | 8 | `test_normality`, `ljung_box` | Seasonality tests (done) |
-| 4 Model | 4, 11b, F26 L12 | `gbm_paths`, `markov_vol_states`, `heston_paths` | Harmonic drift fit (`least_squares`), coverage check |
+| 1 Data | 3a | — | Nominal prices (no CPI), plots (done) |
+| 2 Seasonal cycle | 8 | `mc_estimate` | Seasonality tests (done) |
+| 3 Seasonal drift | 4, F26 L12 | — | Harmonic drift fit (`least_squares`), CV (done) |
+| 4 Volatility / GBM checks | 3a, 8, 11b, F26 L12 | `annualized_vol`, `test_normality`, `ljung_box`, `gbm_paths`, `markov_vol_states`, `heston_paths` | Past-year volatility, coverage check, regimes (done) |
 | 5 Forecast | 2 | — | Rolling-origin backtest |
 | 6 Option | 9 | `binomial_optimal_stopping`, `american_put` | Boundary plot, warehouse vs on-farm |
 | 7 MC check | 2 | `gbm_paths`, `mc_estimate` | Rule along paths |
