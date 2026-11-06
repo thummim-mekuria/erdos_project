@@ -41,7 +41,7 @@ price rise (Steps 2–5), the right-hand costs (§3), and whether the inequality
 seasons (Step 8). The binomial tree (Step 6) solves the same problem as an American-style
 option, the course's method for "when should I exercise?".
 
-### The one modelling idea to get right (Lectures 5, 7)
+### The one modelling idea to get right
 
 Risk-neutral pricing assumes the position can be hedged, which replaces the drift by `r` — and
 then storing never pays. **Maize in Kenya cannot be hedged:** the only licensed derivatives
@@ -84,17 +84,17 @@ where both exist (median ratio 1.00 — WFP republishes KAMIS). Details in `data
 
 ## 4. Notebook steps and results
 
-| Step | What it does (lecture, `quantkit`) | Result |
+| Step | What it does (`quantkit` functions) | Result |
 |---|---|---|
-| **1 Data** (3a) | Load the series, plot it, define monthly log returns (none across gaps) | 225/234 months, 220 returns |
-| **2 Seasonal cycle** (8) | Each season vs its harvest level (actual price and %); Kruskal–Wallis, random-phase permutation test, sign test; monthly averages (`mc_estimate`) | Up from harvest to May–Jul in **15 of 17** seasons (p = 0.001); cycle p = 0.0002 |
-| **3 Seasonal drift** (4; `least_squares` as in F26 L12) | One annual wave fitted by least squares; number of waves by leave-one-year-out cross-validation | Expected rise **≈ +34% Dec → Jun**; one wave beats 12 raw monthly means out of sample |
-| **4 Volatility / GBM checks** (3a, 8) | σ from de-seasonalized returns; normality and Ljung–Box tests; past-year volatility; drift for the tree μ = 12g + σ²/2; simulation coverage check (`gbm_paths`) | σ ≈ 0.40; fat tails, year-to-year mean reversion (lag-12 ≈ −0.2), volatility clustering; 89–90% coverage |
+| **1 Data** | Load the series, plot it, define monthly log returns (none across gaps) | 225/234 months, 220 returns |
+| **2 Seasonal cycle** | Each season vs its harvest level (actual price and %); Kruskal–Wallis, random-phase permutation test, sign test; monthly averages (`mc_estimate`) | Up from harvest to May–Jul in **15 of 17** seasons (p = 0.001); cycle p = 0.0002 |
+| **3 Seasonal drift** (`least_squares`) | One annual wave fitted by least squares; number of waves by leave-one-year-out cross-validation | Expected rise **≈ +34% Dec → Jun**; one wave beats 12 raw monthly means out of sample |
+| **4 Volatility / GBM checks** | σ from de-seasonalized returns; normality and Ljung–Box tests; past-year volatility; drift for the tree μ = 12g + σ²/2; simulation coverage check (`gbm_paths`) | σ ≈ 0.40; fat tails, year-to-year mean reversion (lag-12 ≈ −0.2), volatility clustering; 89–90% coverage |
 | **5 Forecast check** | Rolling-origin 1- and 3-month forecasts vs random walk, raw monthly means, last year's change | 3-month error 15.1% vs 18.6% (random walk); bootstrap CI excludes 0 |
-| **6 Storage value** (9; `binomial_optimal_stopping`, `american_put`) | Tree checked against the American put, then payoff = price, real-world drift, costs | Warehouse **+27%**, on-farm (20% loss) **+18%** of the Dec price; sell end of **June** |
-| **7 Monte Carlo** (2; `gbm_paths`, `mc_estimate`) | Simulate, sell in June, compare with the tree | Within 1 SE |
-| **8 Backtest** (8) | 17 real seasons, model re-estimated each season with earlier data only; plus an out-of-sample price-threshold rule | Warehouse **+28%** (95% CI 7–52%), won 13/17; on-farm +15% (CI −2 to 33%); threshold rule never sold early |
-| **9 Sensitivities** (6) | Bump-and-reprice in loss rate and loan rate; break-evens (model and history) | Break-even loan rate ≈ 53–68%; on-farm loss rate ≈ 45–60%/yr |
+| **6 Storage value** (`binomial_optimal_stopping`, `american_put`) | Tree checked against the American put, then payoff = price, real-world drift, costs | Warehouse **+27%**, on-farm (20% loss) **+18%** of the Dec price; sell end of **June** |
+| **7 Monte Carlo** (`gbm_paths`, `mc_estimate`) | Simulate, sell in June, compare with the tree | Within 1 SE |
+| **8 Backtest** | 17 real seasons, model re-estimated each season with earlier data only; plus an out-of-sample price-threshold rule | Warehouse **+28%** (95% CI 7–52%), won 13/17; on-farm +15% (CI −2 to 33%); threshold rule never sold early |
+| **9 Sensitivities** | Bump-and-reprice in loss rate and loan rate; break-evens (model and history) | Break-even loan rate ≈ 53–68%; on-farm loss rate ≈ 45–60%/yr |
 
 **Key finding about the method.** With the price as payoff, costs proportional to the price, and
 GBM, the tree value equals the best fixed sale month exactly: the "option" is a calendar

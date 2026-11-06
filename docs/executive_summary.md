@@ -26,7 +26,7 @@ vs 20%/yr on-farm (Kenyan storage-loss surveys, range 10–36%).
    harmonics chosen by leave-one-year-out cross-validation) and constant volatility estimated from
    de-seasonalized returns; log drift converted to the arithmetic drift the tree needs (Itô term).
 3. **Valuation:** the storage decision as an American-style optimal-stopping problem solved on a
-   CRR binomial tree (Lecture 9), using the **real-world** drift because maize cannot be hedged in
+   binomial lattice (dynamic programming), using the **real-world** drift because maize cannot be hedged in
    Kenya (no exchange-traded maize futures), with interest as the discount rate and fees + losses
    as a holding cost.
 4. **Validation:** out-of-sample forecast test vs a random walk; Monte Carlo check of the tree; a
