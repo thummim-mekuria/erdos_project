@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 data/raw/StarterNotebook.ipynb
 data/raw/manifest-*.json
+data/external/knbs_*.xlsx
