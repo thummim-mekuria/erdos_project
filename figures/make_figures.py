@@ -84,7 +84,7 @@ def price_panel(ax, u):
     ax.set_ylabel("Wholesale price (KSh / kg)")
     ax.xaxis.set_major_locator(mdates.YearLocator(2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax.legend(handles=h, loc="upper left", frameon=False, labelcolor=INK)
+    ax.legend(handles=h, loc="upper left", labelcolor=INK, **season.LEGEND_BOX)
     ax.set_title("Price history", loc="left", color=INK, fontsize=12.5, pad=30)
 
 
@@ -96,12 +96,12 @@ def seasonal_panel(ax, county="Uasin-Gishu"):
     ax.set_ylim(25 * np.floor(bottom / 25) - 5, 25 * np.ceil(top / 25) + 5)
     ax.set_ylabel("Price vs Dec–Jan harvest level, %")
     ax.set_title("Seasonal pattern: each season's price relative to its harvest level",
-                 loc="left", color=INK, fontsize=12.5, pad=58)
+                 loc="left", color=INK, fontsize=12.5, pad=12)
     ax.legend(handles=[Line2D([], [], color=season.SEASON_CMAP(0.55), lw=1.2,
                               label="One season (Dec → Nov), coloured by year"),
                        Line2D([], [], color=season.AVG, lw=3.5, label="Average"),
                        Patch(facecolor=season.AVG_BAND, edgecolor="none", label="95% confidence band")],
-              loc="upper left", frameon=False, labelcolor=INK)
+              loc="upper left", labelcolor=INK, **season.LEGEND_BOX)
 
 
 def main():
@@ -118,7 +118,7 @@ def main():
              color=INK, fontsize=14.5, va="top")
     fig.text(0.015, 0.962, "Sources: WFP / HDX (CC BY-IGO); KAMIS via Zindi agriBORA challenge. "
              "Nominal KSh per kg.", color=INK2, fontsize=9.5, va="top")
-    fig.subplots_adjust(left=0.07, right=0.9, top=0.885, bottom=0.04, hspace=0.42)
+    fig.subplots_adjust(left=0.07, right=0.9, top=0.885, bottom=0.04, hspace=0.3)
     pos = ax2.get_position()
     season.season_colorbar(fig, fig.add_axes([0.915, pos.y0, 0.012, pos.height]))
     out = FIG / "uasin_gishu_price_2006_2025.png"

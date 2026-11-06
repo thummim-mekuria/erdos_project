@@ -36,12 +36,14 @@ from scipy import stats
 ROOT = Path(__file__).resolve().parents[1]
 SURF, INK, INK2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
 BLUE, BLUE_BAND, YEAR_LINE = "#2a78d6", "#cde2fb", "#c3c2b7"
-# average line + band: green, a hue magma never uses, so it stands out from the year lines
-AVG, AVG_BAND = "#199e70", "#c4ecdc"
-# season lines coloured by year: magma, truncated before its palest yellow so every
+# legend style: boxed, solid white background so lines and gridlines don't show through
+LEGEND_BOX = dict(frameon=True, facecolor="white", framealpha=1.0, edgecolor=INK2, fancybox=False)
+# average line + band: red, a hue YlGnBu never uses, so it stands out from the year lines
+AVG, AVG_BAND = "#e34948", "#f8cfcf"
+# season lines coloured by year: YlGnBu 0.25-0.8 (palest yellow and darkest navy cut) so every
 # year stays visible on the light surface; one shared scale for every panel
 SEASON_CMAP = matplotlib.colors.LinearSegmentedColormap.from_list(
-    "magma_trunc", plt.get_cmap("magma")(np.linspace(0.0, 0.85, 256)))
+    "ylgnbu_trunc", plt.get_cmap("YlGnBu")(np.linspace(0.25, 0.8, 256)))
 SEASON_NORM = matplotlib.colors.Normalize(vmin=2006, vmax=2024)   # year of the December start
 SEASON = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]          # harvest-first ordering
 MONTHS = ["Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov"]
@@ -111,23 +113,24 @@ def season_paths(s):
     return pd.DataFrame(rows, index=MONTHS).T          # seasons x months
 
 
-def panel(ax, county, s, res):
+def panel(ax, county, s, res, show_stats=False):
     P = season_paths(s)
     pct = 100 * (np.exp(P) - 1)
     for yr, row in pct.iterrows():            # index = season end year; season starts Dec yr-1
         ax.plot(range(12), row.values, color=SEASON_CMAP(SEASON_NORM(yr - 1)), lw=1.2,
-                alpha=.9, zorder=2.2)            # above the band; below gridlines and the average
+                alpha=.9, zorder=2.2)            # above the band and average; below gridlines
     mean = P.mean()
     se = P.std() / np.sqrt(P.count())
     lo, hi = 100 * (np.exp(mean - 1.96 * se) - 1), 100 * (np.exp(mean + 1.96 * se) - 1)
-    ax.fill_between(range(12), lo, hi, color=AVG_BAND, lw=0, zorder=2)
-    ax.plot(range(12), 100 * (np.exp(mean) - 1), color=AVG, lw=3.5, zorder=3,
+    # band and average at the bottom of the stack: behind season lines, gridlines and zero line
+    ax.fill_between(range(12), lo, hi, color=AVG_BAND, lw=0, zorder=1.0)
+    ax.plot(range(12), 100 * (np.exp(mean) - 1), color=AVG, lw=3.5, zorder=1.1,
             path_effects=[pe.Stroke(linewidth=6, foreground=SURF), pe.Normal()])
-    ax.axhline(0, color=INK2, lw=1, zorder=2.6)  # in front of the season lines
+    ax.axhline(0, color="black", lw=1.2, ls="-", zorder=2.6)  # in front of the season lines
     ax.set_xticks(range(12), MONTHS)
-    ax.set_title(county, loc="left", color=INK, fontsize=13, pad=58)
+    ax.set_title(county, loc="left", color=INK, fontsize=13, pad=58 if show_stats else 10)
     ax.set_axisbelow(False)                      # gridlines at zorder 2.5: in front of season lines
-    ax.grid(axis="y", color=GRID, lw=.8)
+    ax.grid(axis="y", color="black", lw=.6, ls="-")
     for sp in ("top", "right", "left"):
         ax.spines[sp].set_visible(False)
     ax.spines["bottom"].set_color(INK2)
@@ -138,7 +141,8 @@ def panel(ax, county, s, res):
            f"May–Jul above Dec–Jan in {res['pos']} of {len(res['rises'])} years (sign test p = {res['sign_p']:.2g})\n"
            f"Seasonal cycle {100 * res['amp']:.1f}%/month (permutation p = {res['amp_p']:.2g})")
 
-    ax.text(0, 1.02, txt, transform=ax.transAxes, va="bottom", color=INK2, fontsize=9.5, linespacing=1.4)
+    if show_stats:                        # test results printed above the panel (off by default)
+        ax.text(0, 1.02, txt, transform=ax.transAxes, va="bottom", color=INK2, fontsize=9.5, linespacing=1.4)
     return float(np.nanmax(pct.values)), float(np.nanmin(pct.values))
 
 
@@ -179,10 +183,10 @@ def main():
     ax.set_ylim(25 * np.floor(bottom / 25) - 5, 25 * np.ceil(top / 25) + 5)
     fig.suptitle("Uasin-Gishu maize prices rise after harvest almost every year",
                  x=0.01, ha="left", color=INK, fontsize=14, y=0.995)
-    fig.text(0.01, 0.945, "Thin lines: each season (Dec → Nov), coloured by year. Green: average, "
+    fig.text(0.01, 0.945, "Thin lines: each season (Dec → Nov), coloured by year. Red: average, "
              "with 95% confidence band.\nEldoret monthly wholesale prices, WFP / HDX; gaps filled per "
              "data/README.md.", color=INK2, fontsize=9.5, va="top", linespacing=1.4)
-    fig.subplots_adjust(left=0.08, right=0.88, bottom=0.07, top=0.76)
+    fig.subplots_adjust(left=0.08, right=0.88, bottom=0.07, top=0.84)
     pos = ax.get_position()
     season_colorbar(fig, fig.add_axes([0.9, pos.y0, 0.014, pos.height]))
     out = ROOT / "figures" / "seasonality_uasin_gishu.png"
