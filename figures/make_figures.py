@@ -100,7 +100,7 @@ def seasonal_panel(ax, county="Uasin-Gishu"):
     ax.legend(handles=[Line2D([], [], color=season.SEASON_CMAP(0.55), lw=1.2,
                               label="One season (Dec → Nov), coloured by year"),
                        Line2D([], [], color=season.AVG, lw=3.5, label="Average"),
-                       Patch(facecolor=season.AVG_BAND, edgecolor="none", label="95% confidence band")],
+                       Patch(facecolor=season.AVG_BAND, edgecolor="none", label="± 2σ of the average (2 standard errors)")],
               loc="upper left", labelcolor=INK, **season.LEGEND_BOX)
 
 

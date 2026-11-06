@@ -121,7 +121,7 @@ def panel(ax, county, s, res, show_stats=False):
                 alpha=.9, zorder=2.2)            # above the band and average; below gridlines
     mean = P.mean()
     se = P.std() / np.sqrt(P.count())
-    lo, hi = 100 * (np.exp(mean - 1.96 * se) - 1), 100 * (np.exp(mean + 1.96 * se) - 1)
+    lo, hi = 100 * (np.exp(mean - 2 * se) - 1), 100 * (np.exp(mean + 2 * se) - 1)   # average ± 2 SE
     # band and average at the bottom of the stack: behind season lines, gridlines and zero line
     ax.fill_between(range(12), lo, hi, color=AVG_BAND, lw=0, zorder=1.0)
     ax.plot(range(12), 100 * (np.exp(mean) - 1), color=AVG, lw=3.5, zorder=1.1,
@@ -184,7 +184,7 @@ def main():
     fig.suptitle("Uasin-Gishu maize prices rise after harvest almost every year",
                  x=0.01, ha="left", color=INK, fontsize=14, y=0.995)
     fig.text(0.01, 0.945, "Thin lines: each season (Dec → Nov), coloured by year. Red: average, "
-             "with 95% confidence band.\nEldoret monthly wholesale prices, WFP / HDX; gaps filled per "
+             "± 2σ of the average (2 standard errors).\nEldoret monthly wholesale prices, WFP / HDX; gaps filled per "
              "data/README.md.", color=INK2, fontsize=9.5, va="top", linespacing=1.4)
     fig.subplots_adjust(left=0.08, right=0.88, bottom=0.07, top=0.84)
     pos = ax.get_position()
