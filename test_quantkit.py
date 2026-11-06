@@ -273,5 +273,120 @@ class TestReturnsAndDiagnostics(unittest.TestCase):
         self.assertAlmostEqual(qk.ljung_box(x, 1)["lb_stat"][0], n * (n + 2) * rho1**2 / (n - 1))
 
 
+class TestEfficientAmerican(unittest.TestCase):
+    """F26 L10: batch tree, premium-interpolation pricer, American IV."""
+
+    def test_vectorized_matches_single_tree(self):
+        cases = [(100, 100, .3, 1., .04, .01), (100, 110, .2, .5, .04, .01),
+                 (90, 100, .4, 2., .04, 0.), (250, 260, .4, 1., .02, .015)]
+        cols = [np.array(c) for c in zip(*cases)]
+        for kind, single in (("put", qk.american_put), ("call", qk.american_call)):
+            batch = qk.american_vectorized(*cols, kind=kind, n_steps=400)
+            for (s, k, sig, t, r, q), b in zip(cases, batch):
+                self.assertAlmostEqual(b, single(s, k, sig, t, r, q, n_steps=400), places=10)
+
+    def test_homogeneity(self):
+        # L10: V(S, K) = K V(S/K, 1)
+        a = qk.american_vectorized(250, 260, .4, 1, .04, .015)
+        b = 260 * qk.american_vectorized(250 / 260, 1, .4, 1, .04, .015)
+        self.assertAlmostEqual(a, b, places=8)
+
+    def test_fast_pricer_accuracy(self):
+        r, q = .04, .015
+        f = qk.make_american_pricer(r, q, n_steps=200)
+        rng = np.random.default_rng(0)
+        n = 300
+        s, k = rng.uniform(180, 200, n), rng.uniform(180, 200, n)
+        sig, t = rng.uniform(.21, .5, n), rng.uniform(.1, 1.5, n)
+        fast = f(s, k, sig, t)
+        slow = qk.american_vectorized(s, k, sig, t, r, q, n_steps=1000)
+        self.assertLess(np.mean((fast - slow) ** 2), 1e-3)   # course: 3.2e-4
+        self.assertLess(np.max(np.abs(fast - slow)), 0.25)
+        self.assertTrue(np.isnan(f(100, 100, 2.0, 1.0)))     # off-grid -> NaN
+
+    def test_american_iv_round_trip(self):
+        f = qk.make_american_pricer(.02, 0., n_steps=200)
+        k = np.linspace(230, 280, 50)
+        iv = qk.implied_vol_bisect(f(250, k, .4, 1 / 3), 250, k, 1 / 3, f)
+        np.testing.assert_allclose(iv, .4, atol=1e-7)
+
+
+class TestHeston(unittest.TestCase):
+    """F26 L12."""
+    P = dict(v0=.04, kappa=2., theta=.06, xi=.6, rho=-.7)
+
+    def test_black_scholes_limit(self):
+        # Remark 2 in L12: xi -> 0 and v0 = theta gives Black-Scholes
+        k = np.linspace(50, 140, 10)
+        h = qk.heston_call(100, k, 1, .02, .09, 2, .09, 1e-6, 0., .01)
+        np.testing.assert_allclose(h, qk.bs_call(100, k, .3, 1, .02, .01), atol=1e-4)
+
+    def test_matches_original_heston_1993_formula(self):
+        """Independent check: Heston's original P1/P2 two-integral formula."""
+        from scipy.integrate import quad
+
+        def heston93(S, K, t, r, v0, kap, th, xi, rho, q):
+            def f(phi, j):
+                u, b = (.5, kap - rho * xi) if j == 1 else (-.5, kap)
+                e = b - rho * xi * phi * 1j
+                d = np.sqrt(e ** 2 - xi ** 2 * (2 * u * phi * 1j - phi ** 2))
+                g = (e + d) / (e - d)
+                C = (r - q) * phi * 1j * t + kap * th / xi ** 2 * (
+                    (e + d) * t - 2 * np.log((1 - g * np.exp(d * t)) / (1 - g)))
+                D = (e + d) / xi ** 2 * (1 - np.exp(d * t)) / (1 - g * np.exp(d * t))
+                return np.exp(C + D * v0 + 1j * phi * np.log(S))
+            P = [.5 + quad(lambda ph: np.real(np.exp(-1j * ph * np.log(K)) * f(ph, j) / (1j * ph)),
+                           1e-8, 200, limit=500)[0] / np.pi for j in (1, 2)]
+            return S * np.exp(-q * t) * P[0] - K * np.exp(-r * t) * P[1]
+
+        for args in [(100, 100, 1, .03, .04, 2, .06, .6, -.7, 0),
+                     (100, 120, .5, .02, .09, 1.5, .05, .4, -.3, .01),
+                     (200, 180, .25, .02, .25, 1, .1225, .9, -.1, .01)]:
+            self.assertAlmostEqual(qk.heston_call(*args), heston93(*args), places=6)
+
+    def test_parity_bounds_and_smile(self):
+        S, r, q, t = 200., .02, .01, .5
+        k = np.linspace(100, 275, 30)
+        c = qk.heston_call(S, k, t, r, .25, 1, .35 ** 2, .9, -.1, q)
+        p = qk.heston_put(S, k, t, r, .25, 1, .35 ** 2, .9, -.1, q)
+        np.testing.assert_allclose(c - p, S * np.exp(-q * t) - k * np.exp(-r * t), atol=1e-10)
+        self.assertTrue(np.all(np.diff(c) < 0))
+        self.assertTrue(np.all(c >= np.maximum(S * np.exp(-q * t) - k * np.exp(-r * t), 0) - 1e-9))
+        # negative rho -> implied vol decreases with strike (skew)
+        iv = qk.bs_implied_vol(qk.heston_call(100, [80, 100, 120], 1, .02, **self.P), 100,
+                               np.array([80, 100, 120]), 1, .02)
+        self.assertTrue(iv[0] > iv[1] > iv[2])
+
+    def test_monte_carlo_agrees_with_formula(self):
+        rng = np.random.default_rng(1)
+        S, v = qk.heston_paths(100, t=1, r=.03, n_steps=500, n_sims=100_000, rng=rng, **self.P)
+        pay = np.exp(-.03) * np.maximum(S[:, -1] - 100, 0)
+        se = pay.std() / np.sqrt(len(pay))
+        self.assertLess(abs(pay.mean() - qk.heston_call(100, 100, 1, .03, **self.P)), 3 * se)
+        # risk-neutral martingale: E[S_T] = S0 e^{rT}
+        self.assertAlmostEqual(S[:, -1].mean() / (100 * np.exp(.03)), 1, delta=4e-3)
+        # E[v_T] = theta + (v0 - theta) e^{-kappa T} (exact for this Euler scheme up to truncation)
+        ev = self.P["theta"] + (self.P["v0"] - self.P["theta"]) * np.exp(-self.P["kappa"])
+        self.assertAlmostEqual(v[:, -1].mean(), ev, delta=1e-3)
+
+    def test_calibration_recovers_parameters(self):
+        true = (.04, 2., .06, .6, -.7)
+        k = np.tile(np.linspace(80, 120, 9), 3)
+        t = np.repeat([.25, .5, 1.], 9)
+        prices = qk.heston_call(100, k, t, .02, *true)
+        for fit in ("price", "iv"):
+            res = qk.heston_calibrate(100, k, t, prices, .02, fit=fit, x0=(.09, 1., .09, .3, -.3))
+            fitted = qk.heston_call(100, k, t, .02, *res.x)
+            self.assertLess(np.max(np.abs(fitted - prices)), 1e-3, fit)
+            self.assertAlmostEqual(res.x[0], true[0], delta=2e-3)   # v0 is well identified
+
+
+class TestNewNotebookBugs(unittest.TestCase):
+    """Fall 2026 L10: bs_euro_put_delta returned +e^{-qt} Phi(-d1)."""
+
+    def test_put_delta_negative_with_dividends(self):
+        self.assertLess(qk.bs_put_delta(100, 100, .3, 1, .04, .01), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

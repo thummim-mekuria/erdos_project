@@ -31,6 +31,13 @@ Bugs fixed relative to the notebooks (see test_quantkit.py)
   (Spring 2026 L9 and L10 Complete notebooks).
 * ``bs_gamma`` was missing sigma in the denominator (Spring 2026 L11 Blank).
 * ``bs_call_delta`` returned the call *price* (Summer 2026 L12 Blank).
+* ``bs_euro_put_delta`` sign error again in Fall 2026 L10 (Blank and
+  Complete); fixed in L11.
+* ``bs_american_call`` (q=0) and ``bs_american_put`` (q=r=0) short-cut to
+  ``bs_call``/``bs_put``, which are not defined in the F26 L10/L11
+  notebooks (NameError).
+* F26 L12 Completed: the calibration's starting guess ``heston_parameters``
+  is never defined, so the notebook fails when run top to bottom.
 
 Sections
 --------
@@ -41,6 +48,8 @@ Sections
 5. Black–Scholes prices and Greeks   (Lectures 5–6, 9)
 6. Implied volatility                (Lecture 10; Su26 L10–12)
 7. Binomial trees / early exercise   (Lecture 9; F26 L9) + one extension
+8. Efficient American pricing        (F26 L10; L12 option_pricing.py)
+9. Heston stochastic volatility      (F26 L12)
 """
 
 from __future__ import annotations
@@ -67,6 +76,10 @@ __all__ = [
     # 7
     "crr_parameters", "american_call", "american_put",
     "binomial_optimal_stopping",
+    # 8
+    "american_vectorized", "make_american_pricer", "implied_vol_bisect",
+    # 9
+    "heston_call", "heston_put", "heston_paths", "heston_calibrate",
 ]
 
 
@@ -568,3 +581,238 @@ def american_call(S0, K, sigma, t, r, q=0.0, n_steps=1000):
     """
     return binomial_optimal_stopping(S0, sigma, t, n_steps,
                                      lambda S: np.maximum(S - K, 0.0), r, q=q)
+
+
+# ---------------------------------------------------------------------------
+# 8. Efficient American pricing (Fall 2026 L10; L12 option_pricing.py)
+# ---------------------------------------------------------------------------
+
+def american_vectorized(S0, K, sigma, t, r, q=0.0, kind="put", n_steps=500):
+    """American option prices for MANY contracts at once (F26 L10).
+
+    Same CRR backward induction as ``american_put``/``american_call``, but
+    every contract is a row of one 2-D array, so a whole batch is priced in a
+    single loop over the n_steps time steps instead of one tree per contract
+    (about 2x faster in the course timing; much more for small n_steps).
+    All inputs broadcast; memory is about 8 * N * (n_steps + 1) bytes.
+    """
+    S0, K, sigma, t, r, q = np.broadcast_arrays(
+        *(np.asarray(a, dtype=float) for a in (S0, K, sigma, t, r, q)))
+    shape = S0.shape
+    S0, K, sigma, t, r, q = (a.ravel()[:, None] for a in (S0, K, sigma, t, r, q))
+    sign = -1.0 if kind == "put" else 1.0
+    dt = t / n_steps
+    u = np.exp(sigma * np.sqrt(dt))
+    d = 1.0 / u
+    p = (np.exp((r - q) * dt) - d) / (u - d)
+    if np.any(p < 0) or np.any(p > 1):
+        raise ValueError("CRR probability outside [0, 1]; use more steps.")
+    disc = np.exp(-r * dt)
+    j = np.arange(-n_steps, n_steps + 1, 2)[None, :]
+    prices = S0 * u**j
+    values = np.maximum(sign * (prices - K), 0.0)
+    for _ in range(n_steps):
+        prices = prices[:, :-1] * u
+        values = disc * (p * values[:, 1:] + (1 - p) * values[:, :-1])
+        np.maximum(values, sign * (prices - K), out=values)
+    out = values[:, 0].reshape(shape)
+    return out if shape else float(out)
+
+
+def make_american_pricer(r, q=0.0, kind="put", moneyness=None, sigmas=None,
+                         times=None, n_steps=300):
+    """Precompute a fast American pricer for fixed r and q (F26 L10 idea).
+
+    Two facts from L10:
+      1. Prices are homogeneous in (S, K): V(S, K) = K * V(S/K, 1), so only
+         the ratio S/K matters.
+      2. American = European (closed form) + early-exercise premium, and the
+         premium is smooth, so it interpolates well.
+
+    The premium is computed ONCE on a grid of (S/K, sigma, t) with
+    ``american_vectorized`` and interpolated afterwards. The course
+    interpolates scattered random points with ``LinearNDInterpolator``; a
+    regular grid with ``RegularGridInterpolator`` is faster to build and
+    query and has no random error.
+
+    Returns ``pricer(S, K, sigma, t)``. Inputs outside the grid return NaN.
+    Changing r or q requires building a new pricer.
+    """
+    from scipy.interpolate import RegularGridInterpolator
+    m = np.linspace(0.6, 1.6, 41) if moneyness is None else np.asarray(moneyness, float)
+    s = np.linspace(0.05, 1.0, 20) if sigmas is None else np.asarray(sigmas, float)
+    tt = np.linspace(0.02, 2.0, 21) if times is None else np.asarray(times, float)
+    M, SG, TT = np.meshgrid(m, s, tt, indexing="ij")
+    euro = bs_put if kind == "put" else bs_call
+    prem = (american_vectorized(M, 1.0, SG, TT, r, q, kind, n_steps)
+            - euro(M, 1.0, SG, TT, r, q))
+    interp = RegularGridInterpolator((m, s, tt), prem, bounds_error=False,
+                                     fill_value=np.nan)
+
+    def pricer(S, K, sigma, t):
+        S, K, sigma, t = np.broadcast_arrays(
+            *(np.asarray(a, dtype=float) for a in (S, K, sigma, t)))
+        pts = np.stack([(S / K).ravel(), sigma.ravel(), t.ravel()], axis=-1)
+        out = euro(S, K, sigma, t, r, q) + K * interp(pts).reshape(S.shape)
+        return out if out.shape else float(out)
+
+    pricer.sigma_range = (float(s[0]), float(s[-1]))
+    return pricer
+
+
+def implied_vol_bisect(price, S, K, t, pricer, lo=None, hi=None, tol=1e-8,
+                       max_iter=100):
+    """Implied vol for ANY pricer increasing in sigma, by vectorized bisection.
+
+    Use this for American options (L12 ``bs_american_put_iv``), where there
+    is no closed-form vega for Newton's method. ``pricer(S, K, sigma, t)``,
+    e.g. a function from ``make_american_pricer``. Returns NaN where the price
+    lies outside [pricer(lo), pricer(hi)]. ``lo``/``hi`` default to the
+    pricer's ``sigma_range`` attribute if it has one (pricers from
+    ``make_american_pricer`` do), else (1e-4, 3).
+    """
+    rng_lo, rng_hi = getattr(pricer, "sigma_range", (1e-4, 3.0))
+    lo = rng_lo if lo is None else lo
+    hi = rng_hi if hi is None else hi
+    price, S, K, t = np.broadcast_arrays(
+        *(np.asarray(a, dtype=float) for a in (price, S, K, t)))
+    shape = price.shape
+    price, S, K, t = (a.ravel() for a in (price, S, K, t))
+    a = np.full(price.shape, lo)
+    b = np.full(price.shape, hi)
+    ok = (pricer(S, K, a, t) <= price) & (pricer(S, K, b, t) >= price)
+    for _ in range(max_iter):
+        mid = 0.5 * (a + b)
+        above = pricer(S, K, mid, t) > price
+        b = np.where(above, mid, b)
+        a = np.where(above, a, mid)
+        if np.max(b - a) < tol:
+            break
+    out = np.where(ok, 0.5 * (a + b), np.nan).reshape(shape)
+    return out if shape else float(out)
+
+
+# ---------------------------------------------------------------------------
+# 9. Heston stochastic volatility (Fall 2026 L12)
+# ---------------------------------------------------------------------------
+#
+#   dS/S = (r - q) dt + sqrt(v) dW_S
+#   dv   = kappa (theta - v) dt + xi sqrt(v) dW_v,    corr(dW_S, dW_v) = rho
+#
+# v0 and theta are VARIANCES (vol^2). Argument order here keeps quantkit's
+# (S, K, ..., t, r, q) style: heston_call(S, K, t, r, v0, kappa, theta, xi,
+# rho, q). NOTE the course's option_pricing.heston_call uses
+# (S0, K, v0, r, t, kappa, theta, xi, rho, q) - a different order.
+
+def _heston_cf(u, t, v0, kappa, theta, xi, rho):
+    """Characteristic function E[exp(i u X)] of X = log(S_t / F_t).
+
+    "Little Heston trap" form (Albrecher et al. 2007), which stays on the
+    right branch of the complex log for long maturities.
+    """
+    iu = 1j * u
+    b = kappa - rho * xi * iu
+    a = xi * xi * (iu + u * u)
+    d = np.sqrt(b * b + a)
+    # b - d written as -a / (b + d): avoids cancellation when xi -> 0
+    b_minus_d = -a / (b + d)
+    g = b_minus_d / (b + d)
+    one_minus_e = -np.expm1(-d * t)
+    # log((1 - g e) / (1 - g)) = log1p(g (1 - e) / (1 - g))
+    log_ratio = np.log1p(g * one_minus_e / (1 - g))
+    C = kappa * theta * (b_minus_d * t - 2.0 * log_ratio) / xi**2
+    D = b_minus_d / xi**2 * one_minus_e / (1 - g + g * one_minus_e)
+    return np.exp(C + D * v0)
+
+
+def heston_call(S, K, t, r, v0, kappa, theta, xi, rho, q=0.0):
+    """European call under Heston, semi-closed form (F26 L12).
+
+    Uses Lewis's single-integral formula
+        C = S e^{-qt} - sqrt(S K) e^{-(r+q)t/2} / pi
+            * int_0^inf Re[e^{i u k} phi(u - i/2)] / (u^2 + 1/4) du,
+    with k = log(F/K), F = S e^{(r-q)t}. This is equivalent to the
+    lecture's P1/P2 formula but needs one integral instead of two and its
+    integrand decays faster. Integrated with ``scipy.integrate.quad_vec``.
+    All inputs broadcast.
+    """
+    from scipy.integrate import quad_vec
+    args = np.broadcast_arrays(*(np.asarray(a, dtype=float) for a in
+                                 (S, K, t, r, v0, kappa, theta, xi, rho, q)))
+    shape = args[0].shape
+    S, K, t, r, v0, kappa, theta, xi, rho, q = (a.ravel() for a in args)
+    k = np.log(S / K) + (r - q) * t
+
+    def integrand(u):
+        phi = _heston_cf(u - 0.5j, t, v0, kappa, theta, xi, rho)
+        return np.real(np.exp(1j * u * k) * phi) / (u * u + 0.25)
+
+    integral, _ = quad_vec(integrand, 0.0, np.inf, epsabs=1e-10, epsrel=1e-9)
+    price = (S * np.exp(-q * t)
+             - np.sqrt(S * K) * np.exp(-0.5 * (r + q) * t) * integral / np.pi)
+    out = price.reshape(shape)
+    return out if shape else float(out)
+
+
+def heston_put(S, K, t, r, v0, kappa, theta, xi, rho, q=0.0):
+    """European put under Heston, from put-call parity."""
+    return (heston_call(S, K, t, r, v0, kappa, theta, xi, rho, q)
+            - np.asarray(S) * np.exp(-q * np.asarray(t))
+            + np.asarray(K) * np.exp(-r * np.asarray(t)))
+
+
+def heston_paths(S0, v0, t, r, kappa, theta, xi, rho, n_steps, n_sims,
+                 mu=0.0, q=0.0, rng=None):
+    """Simulate Heston price and variance paths (F26 L12 discrete model).
+
+    Exactly the lecture's n-step scheme ("full truncation" Euler): negative
+    variances are floored at 0 wherever they are used,
+        v_i = v+ + kappa (theta - v+) dt + xi sqrt(v+ dt) Z_v
+        S_i = S_{i-1} exp((mu + r - q - v+/2) dt + sqrt(v+ dt) Z_S)
+    with v+ = max(v_{i-1}, 0) and corr(Z_S, Z_v) = rho. mu = 0 gives
+    risk-neutral paths.
+
+    Returns (S, v), each of shape (n_sims, n_steps + 1).
+    """
+    rng = np.random.default_rng() if rng is None else rng
+    dt = t / n_steps
+    S = np.empty((n_sims, n_steps + 1))
+    v = np.empty((n_sims, n_steps + 1))
+    S[:, 0], v[:, 0] = S0, v0
+    for i in range(1, n_steps + 1):
+        z_v = rng.standard_normal(n_sims)
+        z_s = rho * z_v + np.sqrt(1 - rho**2) * rng.standard_normal(n_sims)
+        vp = np.maximum(v[:, i - 1], 0.0)
+        v[:, i] = vp + kappa * (theta - vp) * dt + xi * np.sqrt(vp * dt) * z_v
+        S[:, i] = S[:, i - 1] * np.exp((mu + r - q - 0.5 * vp) * dt
+                                       + np.sqrt(vp * dt) * z_s)
+    return S, v
+
+
+def heston_calibrate(S, K, t, prices, r, q=0.0, x0=(0.04, 2.0, 0.04, 0.5, -0.5),
+                     fit="price", bounds=None):
+    """Fit (v0, kappa, theta, xi, rho) to observed European CALL prices (F26 L12).
+
+    ``fit="price"`` minimizes price errors; ``fit="iv"`` minimizes
+    implied-vol errors (the lecture compares both: IV errors weight cheap
+    out-of-the-money options more evenly). Uses ``scipy.optimize.least_squares``
+    with the lecture's bounds by default. Unlike the notebook, the starting
+    guess ``x0`` is defined (the notebook's ``heston_parameters`` never is).
+
+    Returns the ``least_squares`` result; ``result.x`` = (v0, kappa, theta,
+    xi, rho).
+    """
+    from scipy.optimize import least_squares
+    S, K, t, prices = (np.asarray(a, dtype=float) for a in (S, K, t, prices))
+    if bounds is None:
+        bounds = ([0.01**2, 0.1, 0.01**2, 0.05, -0.999],
+                  [1.50**2, 10.0, 1.00**2, 5.00, 0.0])
+    target = prices if fit == "price" else bs_implied_vol(prices, S, K, t, r, q)
+
+    def resid(x):
+        model = heston_call(S, K, t, r, *x, q=q)
+        if fit == "iv":
+            model = bs_implied_vol(model, S, K, t, r, q)
+        return np.nan_to_num(model - target, nan=1.0)
+
+    return least_squares(resid, x0=np.asarray(x0, float), bounds=bounds)
