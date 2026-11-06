@@ -1,6 +1,6 @@
 __pycache__/
 .ipynb_checkpoints/
 .DS_Store
-data/raw/StarterNotebook.ipynb
-data/raw/manifest-*.json
-data/external/knbs_*.xlsx
+# full downloads stay local; only two-county extracts are committed (see data/README.md)
+data/raw/
+data/external/
