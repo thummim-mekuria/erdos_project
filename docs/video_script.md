@@ -75,7 +75,8 @@ about 34% from December to June.
 Around that seasonal curve, prices fluctuate randomly. I model this with geometric Brownian
 motion: the log price is a random walk with the seasonal drift. The volatility — the standard
 deviation of the random part, per square root of a year — is about 0.40. This plot shows it is
-not constant: it is highest in crisis years and in the lean months, May to August.
+not constant: it is highest in years of large price shocks — sharp rises like 2011 and 2022, and
+the falls that follow them, like 2010 and 2018 — and in the lean months, May to August.
 
 The shocks also have fat tails and a negative correlation from one year to the next — a shortage
 year tends to be followed by a recovery. So the model is an approximation. Still, when I simulate
