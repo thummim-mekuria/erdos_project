@@ -24,7 +24,8 @@ vs 20%/yr on-farm (Kenyan storage-loss surveys, range 10–36%).
    annual cycle, and a sign test on the harvest-to-lean-season rise.
 2. **Price model:** GBM with a seasonal drift (annual harmonic fitted by least squares, number of
    harmonics chosen by leave-one-year-out cross-validation) and constant volatility estimated from
-   de-seasonalized returns; log drift converted to the arithmetic drift the tree needs (Itô term).
+   de-seasonalized returns; the typical (median) growth converted to the expected (mean) growth
+   the tree needs (a σ²/2 correction, from Jensen's inequality for a lognormal).
 3. **Valuation:** the storage decision as an American-style optimal-stopping problem solved on a
    binomial lattice (dynamic programming), using the **real-world** drift because maize cannot be hedged in
    Kenya (no exchange-traded maize futures), with interest as the discount rate and fees + losses
