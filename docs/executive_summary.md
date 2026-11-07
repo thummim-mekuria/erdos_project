@@ -4,7 +4,7 @@
 
 ## Problem
 
-Smallholder maize farmers in Uasin-Gishu (Eldoret), Kenya's main maize-producing region, usually
+Smallholder maize farmers in Uasin-Gishu (Eldoret), one of Kenya's main maize-producing regions, usually
 sell at harvest (October–December), when prices are lowest. Certified warehouses such as
 agriBORA's agriGHALA (Eldoret, opened Dec 2024) let farmers store grain safely and borrow against
 it, so they can sell later. **What is the option to wait worth, when should the farmer sell, and
@@ -13,7 +13,7 @@ does storing actually beat selling at harvest after interest, fees and losses?**
 ## Data
 
 19 years of monthly wholesale maize prices for Eldoret (WFP / HDX, 2006–2025; five gaps filled
-from KAMIS, which WFP republishes): 225 of 234 months. Cost inputs from published sources: loan
+from KAMIS, which WFP republishes): 225 of 234 months. Cost inputs from published sources: interest
 rate 15%/yr (Central Bank of Kenya average lending rate, 2025), warehouse fee ≈ 3%/yr plus a
 1.5% one-off charge (Warehouse Receipt System tariff), losses 0% in an insured certified warehouse
 vs 20%/yr on-farm (Kenyan storage-loss surveys, range 10–36%).
@@ -27,7 +27,7 @@ vs 20%/yr on-farm (Kenyan storage-loss surveys, range 10–36%).
    de-seasonalized returns; the typical (median) growth converted to the expected (mean) growth
    the tree needs (a σ²/2 correction, from Jensen's inequality for a lognormal).
 3. **Valuation:** the storage decision as an American-style optimal-stopping problem solved on a
-   binomial lattice (dynamic programming), using the **real-world** drift because maize cannot be hedged in
+   binomial tree (dynamic programming), using the **real-world** drift because maize cannot be hedged in
    Kenya (no exchange-traded maize futures), with interest as the discount rate and fees + losses
    as a holding cost.
 4. **Validation:** out-of-sample forecast test vs a random walk; Monte Carlo check of the tree; a
@@ -52,11 +52,11 @@ vs 20%/yr on-farm (Kenyan storage-loss surveys, range 10–36%).
   95% CI 7–52%) and beat selling at harvest in 13 of 17 seasons; excluding the 2022–23 drought
   spike the mean is still +25%. On-farm storage gained +15% (CI −2% to 33%). The two worst seasons
   lost 28–57%.
-* **Break-evens:** warehouse storage keeps paying up to a loan rate of ≈ 53% (history) – 68%
+* **Break-evens:** warehouse storage keeps paying up to an interest rate of ≈ 53% (history) – 68%
   (model); on-farm storage up to a loss rate of ≈ 45–60%/yr.
 
 **Interpretation for agriBORA:** the economic case for certified storage is mainly the removal of
-on-farm losses — interest and fees are small relative to the ≈ 30% seasonal rise. Storing to June
+on-farm losses — interest and fees are small relative to the ≈ 34% seasonal rise. Storing to June
 pays on average and in most years, but farmers should expect occasional large losses; receipt
 financing (which avoids distress sales) makes it possible to hold through the season.
 
@@ -79,3 +79,11 @@ The textbook risk-neutral pricing does not apply when the underlying cannot be h
 real-world drift has to be estimated and validated. And a model can be "correct" yet degenerate:
 with a linear payoff and proportional costs, an American-option tree reduces to a calendar rule —
 something worth recognising rather than hiding.
+
+## Data sources
+
+* World Food Programme (2026). *Kenya – Food Prices* [data set]. Humanitarian Data Exchange, CC BY-IGO.
+  <https://data.humdata.org/dataset/wfp-food-prices-for-kenya>
+* Zindi & agriBORA (2025–26). *agriBORA Commodity Price Forecasting Challenge* [data set; KAMIS market
+  prices, Kenya Ministry of Agriculture]. <https://zindi.africa/competitions/agribora-commodity-price-forecasting-challenge>
+* Full references, code and notebook: <https://github.com/thummim-mekuria/erdos_project>
