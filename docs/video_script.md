@@ -1,7 +1,8 @@
 # Video script — The value of waiting to sell: maize storage in Uasin-Gishu, Kenya
 
-Twelve slides, two short paragraphs each (≈ 1,100 words, ≈ 7–8 minutes at a relaxed pace).
-Figures are in `figures/notebook/`. To shorten, drop slide 6 and merge slides 11–12.
+Twelve slides, two paragraphs each (≈ 1,750 spoken words, ≈ 11–12 minutes at a natural pace).
+Figures are in `figures/notebook/`. For a ≈ 6–7 minute version: drop slide 6, keep only the
+first paragraph of slides 3, 5 and 10, and merge slides 11 and 12.
 
 ---
 
