@@ -46,7 +46,7 @@ option, the course's method for "when should I exercise?".
 
 ### The one modelling idea to get right
 
-Risk-neutral pricing assumes the position can be hedged, which replaces the drift by `r` — and
+Risk-neutral pricing assumes the position can be hedged, which replaces the drift by the interest rate — and
 then storing never pays. **Maize in Kenya cannot be hedged:** the only licensed derivatives
 exchange, NSE NEXT, lists index and single-stock futures, not maize [S9]; KOMEX provides spot
 price benchmarks and plans futures "at a later stage" [S8, S10]. So the decision uses the
