@@ -17,8 +17,8 @@ farmers store insured grain and borrow against it. So: is waiting to sell worth 
 The answer comes down to one inequality. Selling in month t instead of December pays if the expected
 price ratio, P_t over P_0, beats the cost of waiting: interest of about 15% a year — the cost of the
 money you wait for — plus storage costs of about 3% a year in a warehouse, or about 20% of the grain
-lost on the farm. This plot shows the data: 19 years of monthly Eldoret prices, with each December
-marked. The project was inspired by a Zindi price-forecasting challenge.
+lost on the farm. This plot shows the data: 19 years of monthly Eldoret wholesale prices from the
+World Food Programme and Kenya's market information system, with each December marked. The project was inspired by a Zindi price-forecasting challenge.
 
 ## Slide 2 — Monthly prices 2006–2025  *(figure 02)*
 
@@ -56,8 +56,8 @@ Selling in June is worth about 28% more than selling in December, before the war
 
 Net of all costs, waiting until June gains about 27% in a warehouse and 18% on the farm, where losses
 eat into the gain. Replaying the decision on 17 real seasons, using only information available at the
-time, warehouse storage beat selling at harvest in 13 of them, with an average gain of 28% — though two
-bad seasons lost 28 to 57%. These plots show how far costs can rise: storage keeps paying up to an
+time, warehouse storage beat selling at harvest in 13 of them, with an average gain of 28% — still 25%
+without the 2022–23 drought spike — though two bad seasons lost 28 to 57%. These plots show how far costs can rise: storage keeps paying up to an
 interest rate of about 50%, or on-farm losses of about 45% a year. So the value of a certified
 warehouse lies mainly in removing losses.
 
@@ -79,5 +79,11 @@ to be estimated — and a sophisticated model can reduce to a simple principle, 
   warehouse case at a 5% interest rate; at realistic costs the gains are ≈ 27% (warehouse) vs ≈ 18%
   (on-farm). Suggested: *"Waiting until June gains ≈ 27% in a warehouse and ≈ 18% on the farm — and
   keeps paying up to ≈ 50% interest or ≈ 45% annual losses."*
-* **Optional sixth slide:** figure 06 (realized gain by season) — the main validation, currently only
-  in the voiceover.
+* **Recommended sixth slide (between 4 and 5):** figure 06, realized gain by season — the main
+  validation, currently only in the voiceover. If added, move the "Replaying the decision…" sentences
+  from slide 5 onto it.
+* **Slide 1:** add the inequality with i ≈ 15%, c ≈ 3% (warehouse) / 20% (on-farm) as a caption, a
+  source line (WFP / KAMIS via HDX; inspired by the Zindi agriBORA challenge) and your name.
+* **Slide 4:** add a title, e.g. *"Optimal rule: sell at the end of June, whatever the price."*
+* **Closing:** limitations and lessons are required in the video; they are in the slide-5 voiceover,
+  or add a short closing slide with 3–4 bullets.
