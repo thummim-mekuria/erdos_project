@@ -33,8 +33,11 @@ receipt instead of selling at harvest. Waiting costs money: interest, storage fe
 Storing grain is worth it exactly when the expected price rise exceeds the cost of carrying the
 grain (the classic theory of storage):
 
-$$ \text{store from December to month } m \iff
-\mathbb{E}\!\left[\frac{P_m}{P_{\text{Dec}}}\right] e^{-(r + \text{fee} + \text{loss})\,t_m} > 1 . $$
+$$ \text{store from December } (t=0) \text{ to month } t \iff
+\mathbb{E}\!\left[\frac{P_t}{P_0}\right] e^{-(i + \text{fee} + \text{loss})\,t/12} > 1 , $$
+
+with $t$ in months, $P_0$ the December price, $i$ the interest rate per year and fee + loss the
+holding-cost rate per year (the same notation as the notebook).
 
 Everything in the notebook estimates or tests one side of this inequality: the left-hand
 price rise (Steps 2–5), the right-hand costs (§3), and whether the inequality held on real
@@ -47,9 +50,9 @@ Risk-neutral pricing assumes the position can be hedged, which replaces the drif
 then storing never pays. **Maize in Kenya cannot be hedged:** the only licensed derivatives
 exchange, NSE NEXT, lists index and single-stock futures, not maize [S9]; KOMEX provides spot
 price benchmarks and plans futures "at a later stage" [S8, S10]. So the decision uses the
-**real-world** seasonal drift, with `r` = the farmer's loan rate for discounting and
-`holding_cost` = fees + losses. `qk.binomial_optimal_stopping` takes these separately for
-this reason.
+**real-world** seasonal drift, with the interest rate $i$ (the farmer's loan rate) for
+discounting and $c$ = fees + losses as the holding cost — in `qk.binomial_optimal_stopping`
+these are the arguments `r` and `holding_cost`, kept separate for this reason.
 
 ---
 
