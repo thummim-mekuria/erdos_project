@@ -1,6 +1,6 @@
 # Video script — 5 minutes, matched to the slide deck (maize_storage.pdf, 5 slides)
 
-≈ 720 spoken words, conversational: ≈ 4.5–5 minutes at a natural pace.
+≈ 720 spoken words, conversational: ≈ 5 minutes at a natural pace (4.8–5.3 min).
 The full 12-slide version is `docs/video_script.md`.
 
 Suggested slide-text changes (see notes): slide 3 second headline; slide 5 headline.
@@ -85,7 +85,7 @@ storage pays when the price rises faster than the cost of waiting.
   (on-farm). Suggested: *"Waiting until June gains ≈ 27% in a warehouse and ≈ 18% on the farm — and
   keeps paying up to ≈ 50% interest or ≈ 45% annual losses."*
 * **Recommended sixth slide (between 4 and 5):** figure 06, realized gain by season — the main
-  validation, currently only in the voiceover. If added, move the "Replaying the decision…" sentences
+  validation, currently only in the voiceover. If added, move the "To check this against reality…" sentences
   from slide 5 onto it.
 * **Slide 1:** add the inequality with i ≈ 15%, c ≈ 3% (warehouse) / 20% (on-farm) as a caption, a
   source line (WFP / KAMIS via HDX; inspired by the Zindi agriBORA challenge) and your name.
