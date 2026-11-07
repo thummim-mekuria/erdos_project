@@ -59,6 +59,7 @@ files (below) into `data/raw/` and `data/external/`, then run `python data/make_
   (rules: data is open source); KAMIS Eldoret Main Market fills five WFP gaps.
 * Cost inputs (warehouse fees, loss rates, loan rates, harvest calendar) and their sources are
   listed in `docs/agribora_worksheet.md` §3.
+* **Full citations for all data and sources: [`docs/references.md`](docs/references.md).**
 
 ## Acknowledgements
 
