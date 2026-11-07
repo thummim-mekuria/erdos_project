@@ -87,3 +87,32 @@ to be estimated — and a sophisticated model can reduce to a simple principle, 
 * **Slide 4:** add a title, e.g. *"Optimal rule: sell at the end of June, whatever the price."*
 * **Closing:** limitations and lessons are required in the video; they are in the slide-5 voiceover,
   or add a short closing slide with 3–4 bullets.
+
+---
+
+### Sources (for slide captions and the video description; not spoken)
+
+**Price data**
+* World Food Programme (2026). *Kenya – Food Prices* [data set], Humanitarian Data Exchange (HDX),
+  dataset e0d3fba6-f9a2-45d7-b949-140c455197ff, last updated 4 Nov 2026, CC BY-IGO.
+  https://data.humdata.org/dataset/wfp-food-prices-for-kenya — Eldoret town wholesale maize, 2006–2025.
+* Zindi & agriBORA (2025–26). *agriBORA Commodity Price Forecasting Challenge* [data set]
+  (KAMIS market prices, Kenya Ministry of Agriculture), Zindi.
+  https://zindi.africa/competitions/agribora-commodity-price-forecasting-challenge — fills 5 missing months.
+
+**Cost inputs**
+* Interest rate (≈ 15%/yr): Central Bank of Kenya average commercial-bank lending rate, May 2025
+  (15.44%) and Dec 2025 (14.8%), as reported by HapaKenya (2 Jul 2025) and Business Daily.
+* Storage fees and storage, loans, harvest calendar: Kenduiywo, B. et al. (2026). *Enabling
+  private-sector innovation in agricultural storage: Lessons from the agriGHALA warehouse receipt
+  model in Kenya*. CIAT / agriBORA / P4G policy brief. https://hdl.handle.net/10568/182900 ;
+  Warehouse Receipt System tariff as reported by People Daily (n.d.).
+* On-farm losses: De Groote, H., Muteti, F. N., & Bruce, A. Y. (2023). On-farm storage loss estimates
+  of maize in Kenya using community survey methods. *Journal of Stored Products Research* 102, 102107.
+  https://doi.org/10.1016/j.jspr.2023.102107
+
+**Suggested one-line caption for slide 1:**
+*Data: WFP Kenya Food Prices (HDX, CC BY-IGO); KAMIS via the Zindi agriBORA Commodity Price
+Forecasting Challenge.*
+
+Full references: `docs/references.md`.
