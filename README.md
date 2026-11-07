@@ -26,7 +26,8 @@ tested out of sample never improved on it. Full summary: [`docs/executive_summar
 | Path | Contents |
 |---|---|
 | **`maize_storage_option.ipynb`** | **The project notebook** (Steps 1–9: data, seasonality tests, seasonal drift, volatility and GBM checks, forecast validation, storage value, Monte Carlo check, backtest, sensitivities) |
-| `docs/executive_summary.md` | Executive summary |
+| `docs/executive_summary.md`, `docs/Mekuria_quant_project_executive_summary.pdf` | Executive summary (Markdown and PDF) |
+| `docs/Mekuria_quant_bootcamp_project.pdf` | Presentation slides (PDF) |
 | `docs/agribora_worksheet.md` | Project plan, cost inputs with sources, course mapping |
 | `quantkit.py`, `test_quantkit.py` | Course functions (Black–Scholes, trees, optimal stopping, simulation, Heston, statistics), 38 unit tests |
 | `data/make_data.py` | Builds the cleaned price series from the raw downloads |
