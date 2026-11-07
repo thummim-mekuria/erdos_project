@@ -1,6 +1,6 @@
 # Video script — 5-minute version
 
-Eight slides, ≈ 680 spoken words (≈ 5 minutes). Figures are in `figures/notebook/`.
+Eight slides, ≈ 600 spoken words: ≈ 4–4.5 minutes of speaking, ≈ 5 minutes with pauses and slide changes. Figures are in `figures/notebook/`.
 The full 12-slide version is `docs/video_script.md`.
 
 ---
